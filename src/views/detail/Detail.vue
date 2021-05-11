@@ -1,7 +1,12 @@
 <template>
   <div id="detail">
-    <detail-nav-bar class="detail-nav" @titleClick="titleClick" />
-    <scroll class="content" ref="scroll">
+    <detail-nav-bar class="detail-nav" @titleClick="titleClick" ref="nav" />
+    <scroll
+      class="content"
+      ref="scroll"
+      :probe-type="3"
+      @scroll="contentScroll"
+    >
       <detail-swiper :top-images="topImages" />
       <detail-base-info :goods="goods" />
       <detail-shop-info :shop="shop" />
@@ -11,6 +16,7 @@
 
       <goods-list ref="recommend" :goods="recommends" />
     </scroll>
+    <detail-bottom-bar />
   </div>
 </template>
 
@@ -36,6 +42,7 @@ import GoodsList from "components/content/goods/GoodsList.vue";
 // 导入防抖函数
 import { debounce } from "common/utils";
 import { itemListenerMixin } from "common/mixin.js";
+import DetailBottomBar from "./childComps/DetailBottomBar.vue";
 
 export default {
   name: "Detail",
@@ -49,6 +56,7 @@ export default {
     DetailParamInfo,
     DetailCommentInfo,
     GoodsList,
+    DetailBottomBar,
   },
   mixins: [itemListenerMixin],
   data() {
@@ -62,7 +70,9 @@ export default {
       comment: {},
       recommends: [],
       // itemImgListener: null,
-      themeTops: [],
+      themeTopsYs: [],
+      getThemTopY: null,
+      currentIndex: 0,
     };
   },
   created() {
@@ -99,6 +109,32 @@ export default {
       if (data.rate.cRate !== 0) {
         this.comment = data.rate.list[0];
       }
+      //
+
+      //  1.第一次获取值不对
+      // 值不对的原因：this.$refs.params.$el 压根没有渲染
+      // this.themeTops = [];
+      // this.themeTops.push(0); //商品
+      // this.themeTops.push(this.$refs.params.$el.offsetTop); // 参数
+      // this.themeTops.push(this.$refs.comment.$el.offsetTop); // 评论
+      // this.themeTops.push(this.$refs.recommend.$el.offsetTop); // 推荐
+      // console.log(this.themeTops);
+
+      // created不一定会将$el完全渲染出来，但是可以通过$nextTick获取
+      // this.$nextTick(() => {
+      //   // 2. 第二次值：不对
+      //   // 原因：图片没有计算在内
+
+      //   // 根据最新数据的，对应的DOM是已经渲染出来了，
+      //   // 但是图片是还没加载完的(目前获取offsetTop是不包含图片的 )
+      //   // offsetTop值不对的时候，就是因为图片的问题
+      //   this.themeTops = [];
+      //   this.themeTops.push(0); //商品
+      //   this.themeTops.push(this.$refs.params.$el.offsetTop); // 参数
+      //   this.themeTops.push(this.$refs.comment.$el.offsetTop); // 评论
+      //   this.themeTops.push(this.$refs.recommend.$el.offsetTop); // 推荐
+      //   console.log(this.themeTops);
+      // });
     });
 
     // 3. 请求推荐数据
@@ -106,26 +142,72 @@ export default {
       // console.log(res);
       this.recommends = res.data.list;
     });
+
+    // 4.给getThemTopY赋值
+    this.getThemTopY = debounce(() => {
+      // this.newRefresh();
+      this.themeTopsYs = [];
+      this.themeTopsYs.push(0); //商品
+      this.themeTopsYs.push(this.$refs.params.$el.offsetTop); // 参数
+      this.themeTopsYs.push(this.$refs.comment.$el.offsetTop); // 评论
+      this.themeTopsYs.push(this.$refs.recommend.$el.offsetTop); // 推荐
+      console.log(this.themeTopsYs);
+    });
   },
   methods: {
     imageLoad() {
-      // console.log("+++++");
+      // 监听图片加载完成
+      console.log("+++++");
       this.$refs.scroll.refresh();
-      // this.newRefresh();
+      // 调用防抖函数
+      this.getThemTopY();
     },
     titleClick(index) {
       // 点击导航栏，跳转到参数指定的模块
       console.log(index);
-      this.$refs.scroll.scrollTo(0, -this.themeTops[index], 100);
+      this.$refs.scroll.scrollTo(0, -this.themeTopsYs[index], 100);
+    },
+    contentScroll(position) {
+      // console.log(position);
+      // 1.获取y值
+      const positionY = -position.y;
+
+      // 2.positionY和主题中值进行对比
+      //es6语法for循环中的i是字符串 01 02 03
+      for (let i = 0; i < this.themeTopsYs.length; i++) {
+        // console.log(i + 1);
+        let length = this.themeTopsYs.length;
+        // if (
+        //   positionY > this.themeTopsYs[i] &&
+        //   positionY < this.themeTopsYs[i + 1]
+        // ) {
+        //   console.log(i);
+        // }
+        if (
+          this.currentIndex !== i &&
+          ((i < length - 1 &&
+            positionY >= this.themeTopsYs[i] &&
+            positionY < this.themeTopsYs[i + 1]) ||
+            (i === length - 1 && positionY > this.themeTopsYs[i]))
+        ) {
+          // console.log(i);
+          this.currentIndex = i;
+          // console.log(this.currentIndex);
+          this.$refs.nav.currentIndex = this.currentIndex;
+        }
+      }
     },
   },
   mounted() {
     // 获取四个参数的offsetTop值    注意：要从$el中获取
-    this.themeTops.push(0); //商品
-    this.themeTops.push(this.$refs.params.$el.offsetTop); // 参数
-    this.themeTops.push(this.$refs.comment.$el.offsetTop); // 评论
-    this.themeTops.push(this.$refs.recommend.$el.offsetTop); // 推荐
-    console.log(this.themeTops);
+  },
+  updated() {
+    // this.themeTops = [];
+    // this.themeTops.push(0); //商品
+    // this.themeTops.push(this.$refs.params.$el.offsetTop); // 参数
+    // this.themeTops.push(this.$refs.comment.$el.offsetTop); // 评论
+    // this.themeTops.push(this.$refs.recommend.$el.offsetTop); // 推荐
+    // console.log(this.themeTops);
   },
   destroyed() {
     // console.log("deactivated");

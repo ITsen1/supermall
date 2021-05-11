@@ -65,12 +65,14 @@ export default {
 .goods_info_desc {
   font-size: 0.6rem;
   padding: 0.42rem 0.34rem;
+  margin-bottom: -44px;
 }
 .desc_line {
   width: 3.5rem;
   height: 0.04rem;
   background-color: gray;
   position: relative;
+  /* margin-bottom: 5px; */
 }
 
 .desc_dot {
