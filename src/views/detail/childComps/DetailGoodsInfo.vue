@@ -42,6 +42,7 @@ export default {
   },
   methods: {
     loadImg() {
+      // console.log("------");
       // 判断所有的图片加载完了,那么进行一次回调
       this.counter += 1;
       if (this.counter === this.imagesLength) {

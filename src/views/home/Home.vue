@@ -54,6 +54,7 @@ import { debounce } from "common/utils";
 
 import Scroll from "components/common/scroll/Scroll.vue";
 import BackTop from "components/content/backTop/BackTop.vue";
+import { itemListenerMixin } from "common/mixin.js";
 export default {
   name: "Home",
   components: {
@@ -66,6 +67,7 @@ export default {
     Scroll,
     BackTop,
   },
+  mixins: [itemListenerMixin],
   data() {
     return {
       banners: [],
@@ -80,6 +82,7 @@ export default {
       tabOffsetTop: 0,
       isTabFixed: false,
       saveY: 0,
+      // itemImgListener: null,
     };
   },
   computed: {
@@ -103,7 +106,7 @@ export default {
     // console.log(this.saveY);
 
     // 2.取消全局事件的监听
-    this.$bus.$off
+    this.$bus.$off("itemImageLoad", this.itemImgListener);
   },
   // 生命周期函数create
   created() {
@@ -117,13 +120,15 @@ export default {
   },
   mounted() {
     // 1.防抖函数处理item图片加载
-    // 图片加载完的事件监听
-    const refresh = debounce(this.$refs.scroll.refresh, 50);
-    //3 .监听item中图片加载完成
-    this.$bus.$on("itemImageLoad", () => {
-      refresh();
-    });
-
+    // 图片加载完的事件监听、
+    // 导入mixin.js混入模块
+    // const refresh = debounce(this.$refs.scroll.refresh, 50);
+    // // 对我们监听的事件做一个保存
+    // this.itemImgListener = () => {
+    //   refresh();
+    // };
+    // //3 .监听item中图片加载完成
+    // this.$bus.$on("itemImageLoad", this.itemImgListener);
     // 2.获取tabControl的offertTop
     // 所有的组件都有一个$el:用于获取组件中的元素
     // this.tabOffsetTop = this.$refs.tabControl.tabOffsetTop;
@@ -171,7 +176,6 @@ export default {
       this.isTabFixed = -position.y > this.tabOffsetTop;
     },
 
-    
     // 上拉加载更多模块↓
     loadMore() {
       // console.log("上拉加载");

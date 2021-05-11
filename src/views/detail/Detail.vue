@@ -1,15 +1,15 @@
 <template>
   <div id="detail">
-    <detail-nav-bar class="detail-nav" />
+    <detail-nav-bar class="detail-nav" @titleClick="titleClick" />
     <scroll class="content" ref="scroll">
       <detail-swiper :top-images="topImages" />
       <detail-base-info :goods="goods" />
       <detail-shop-info :shop="shop" />
       <detail-goods-info :detail-info="detailInfo" @loadImgEvent="imageLoad" />
-      <detail-param-info :paramInfo="paramInfo" />
-      <detail-comment-info :comment="comment" />
+      <detail-param-info ref="params" :paramInfo="paramInfo" />
+      <detail-comment-info ref="comment" :comment="comment" />
 
-      <goods-list :goods="recommends" />
+      <goods-list ref="recommend" :goods="recommends" />
     </scroll>
   </div>
 </template>
@@ -33,6 +33,9 @@ import DetailParamInfo from "./childComps/DetailParamInfo.vue";
 import DetailCommentInfo from "./childComps/DetailCommentInfo.vue";
 
 import GoodsList from "components/content/goods/GoodsList.vue";
+// 导入防抖函数
+import { debounce } from "common/utils";
+import { itemListenerMixin } from "common/mixin.js";
 
 export default {
   name: "Detail",
@@ -47,6 +50,7 @@ export default {
     DetailCommentInfo,
     GoodsList,
   },
+  mixins: [itemListenerMixin],
   data() {
     return {
       iid: null,
@@ -57,6 +61,8 @@ export default {
       paramInfo: {},
       comment: {},
       recommends: [],
+      // itemImgListener: null,
+      themeTops: [],
     };
   },
   created() {
@@ -66,7 +72,7 @@ export default {
 
     // 2. 根据 iid 请求详情数据
     getDetail(this.iid).then((res) => {
-      console.log(res);
+      // console.log(res);
       const data = res.result;
       // 1. 获取顶部轮播图数据
       this.topImages = data.itemInfo.topImages;
@@ -97,14 +103,34 @@ export default {
 
     // 3. 请求推荐数据
     getRecommend().then((res) => {
-      console.log(res);
+      // console.log(res);
       this.recommends = res.data.list;
     });
   },
   methods: {
     imageLoad() {
+      // console.log("+++++");
       this.$refs.scroll.refresh();
+      // this.newRefresh();
     },
+    titleClick(index) {
+      // 点击导航栏，跳转到参数指定的模块
+      console.log(index);
+      this.$refs.scroll.scrollTo(0, -this.themeTops[index], 100);
+    },
+  },
+  mounted() {
+    // 获取四个参数的offsetTop值    注意：要从$el中获取
+    this.themeTops.push(0); //商品
+    this.themeTops.push(this.$refs.params.$el.offsetTop); // 参数
+    this.themeTops.push(this.$refs.comment.$el.offsetTop); // 评论
+    this.themeTops.push(this.$refs.recommend.$el.offsetTop); // 推荐
+    console.log(this.themeTops);
+  },
+  destroyed() {
+    // console.log("deactivated");
+    // 离开该页面时停止图片更新的监听
+    this.$bus.$off("itemImageLoad", this.itemImgListener);
   },
 };
 </script>
