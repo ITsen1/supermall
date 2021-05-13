@@ -24,7 +24,8 @@
 export default {
   methods: {
     addToCart() {
-      this.$emit("addEvent");
+      // console.log("点击了购物车");
+      this.$emit("addCart");
     },
   },
 };
