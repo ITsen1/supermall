@@ -46,6 +46,12 @@ import { debounce } from "common/utils";
 import { itemListenerMixin, backTopMixin } from "common/mixin.js";
 import DetailBottomBar from "./childComps/DetailBottomBar.vue";
 
+// 导入actions的映射
+import { mapActions } from "vuex";
+
+// toast模块
+import Toast from "components/common/toast/Toast";
+
 export default {
   name: "Detail",
   components: {
@@ -157,6 +163,7 @@ export default {
     });
   },
   methods: {
+    ...mapActions(["addCart"]),
     imageLoad() {
       // 监听图片加载完成
       console.log("+++++");
@@ -218,7 +225,16 @@ export default {
       // 2. 将商品添加到购物车里，使用Vuex
       // this.$store.cartList.push(product);
       // this.$store.commit("addCart", product);
-      this.$store.dispatch("addCart", product);
+
+      // 1.直接从vuex取得promise方法(promise)
+      // this.$store.dispatch("addCart", product).then((res) => {
+      //   console.log(res);
+      // });
+
+      // 2.导入vuex映射，直接获取自身属性(mapActions)
+      this.addCart(product).then((res) => {
+        console.log(res);
+      });
     },
   },
   mounted() {
